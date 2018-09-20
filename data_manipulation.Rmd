@@ -1,0 +1,156 @@
+---
+title: "data_manipulation"
+author: "Catherine"
+date: "9/20/2018"
+output: html_document
+---
+
+## Import data
+
+```{r}
+library(tidyverse)
+
+options(tibble.print_min = 3)
+
+litters_data = read_csv("./data/FAS_litters.csv",
+  col_types = "ccddiiii")
+litters_data = janitor::clean_names(litters_data)
+
+pups_data = read_csv("./data/FAS_pups.csv",
+  col_types = "ciiiii")
+pups_data = janitor::clean_names(pups_data)
+
+```
+
+## Select variables
+```{r}
+select(litters_data, group, litter_number, gd0_weight, pups_born_alive)
+
+select(litters_data, litter_number, gd0_weight)
+```
+by specify a range:
+```{r}
+select(litters_data, gd_of_birth:pups_survive)
+```
+
+specify columns you’d like to remove:
+```{r}
+select(litters_data, -pups_survive)
+```
+
+to rename sth, use rename instead of select
+```{r}
+rename(litters_data, GROUP = group, LiTtEr_NuMbEr = litter_number)
+rename(litters_data, gest_day_0_weight = gd0_weight)
+```
+
+reorganizing columns without discarding anything
+```{r}
+select(litters_data, litter_number, starts_with("pup"))
+select(pups_data, litter_number, sex, pd_ears)
+select(litters_data, litter_number, ends_with("weight"))
+```
+
+## data filtering
+filter data
+```{r}
+filter(litters_data, gd0_weight < 25)
+filter(litters_data, gd0_weight >= 25)
+
+filter(litters_data, pups_born_alive == 8)
+
+filter(litters_data, !is.na(gd0_weight))
+
+filter(litters_data, group == "Low8" | group == "Low7")
+filter(litters_data, group %in% c("Low8", "Low7"))
+## they are the same but the second one is better.
+
+filter(litters_data, pups_born_alive %in% 4:6 )
+filter(litters_data, pups_born_alive %in% 4:6, !is.na(gd0_weight))
+
+## filter the NA value
+```
+
+## Mutate
+
+Creat variables
+
+```{r}
+mutate(litters_data,
+       wt_gain = gd18_weight - gd0_weight,
+       group = tolower(group), 
+       wt_gain_squar = wt_gain^2)
+# the first line is to create a new variable, the second line is to renew a varibles. 
+
+```
+
+## Arrange
+
+Let's arrange data
+
+```{r}
+## not that common but useful to know
+
+arrange(litters_data, gd0_weight)
+arrange(litters_data, desc(pups_born_alive), gd0_weight)
+```
+
+## Pipling
+
+Look at intermidiate  
+```{r}
+litters_data_raw = read_csv("./data/FAS_litters.csv",
+  col_types = "ccddiiii")
+litters_data_clean_names = janitor::clean_names(litters_data_raw)
+litters_data_selected_cols = select(litters_data_clean_names, -pups_survive)
+litters_data_with_vars = mutate(litters_data_selected_cols, 
+  wt_gain = gd18_weight - gd0_weight,
+  group = tolower(group))
+litters_data_with_vars
+```
+
+Use nested function call
+
+```{r}
+litters_data_clean = 
+  mutate(
+    select(
+      janitor::clean_names(
+        read_csv("./data/FAS_litters.csv", col_types = "ccddiiii")
+        ), 
+    -pups_survive
+    ),
+  wt_gain = gd18_weight - gd0_weight,
+  group = tolower(group)
+  )
+litters_data_clean
+```
+
+Use piping
+
+```{r}
+read_csv("./data/FAS_litters.csv", col_types = "ccddiiii") %>% 
+  janitor::clean_names() %>% 
+  select(-pups_survive) %>% 
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = tolower(group)
+    ) %>% 
+  filter(!is.na(gd0_weight))
+```
+
+Illustrate placeholder use with 'lm'
+
+```{r}
+read_csv("./data/FAS_litters.csv", col_types = "ccddiiii") %>% 
+  janitor::clean_names() %>% 
+  select(-pups_survive) %>% 
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = tolower(group)
+    ) %>% 
+  filter(!is.na(gd0_weight)) %>%  
+ lm(gd18_weight ~ gd0_weight, data = .)
+ ```
+
+
